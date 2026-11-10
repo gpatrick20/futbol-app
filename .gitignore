@@ -11,3 +11,7 @@ __pycache__/
 
 # Dependencias de frontend
 node_modules/
+
+# Frontend: salida de compilación y caché de TypeScript
+/frontend/dist/
+*.tsbuildinfo
