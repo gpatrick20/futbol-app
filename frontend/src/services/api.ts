@@ -65,3 +65,24 @@ export async function getCurrentUser(token: string): Promise<User> {
 
   return readResponse<User>(response);
 }
+
+export interface RegisterData {
+  email: string;
+  password: string;
+  full_name: string;
+  role: "leader" | "player";
+  commune: string | null;
+  position: string | null;
+}
+
+export async function register(data: RegisterData): Promise<User> {
+  const response = await fetch(`${API_URL}/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return readResponse<User>(response);
+}
