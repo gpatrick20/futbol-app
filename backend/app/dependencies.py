@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from uuid import UUID
 
 from app.core.security import decode_access_token
 from app.db.session import get_db
@@ -16,11 +17,17 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    user_id = decode_access_token(token)
-    if user_id is None:
+    subject = decode_access_token(token)
+    if not isinstance(subject, str):
         raise credentials_exception
 
-    user = db.query(User).filter(User.id == user_id).first()
+    try:
+        user_id = UUID(subject)
+    except ValueError:
+        raise credentials_exception
+    
+
+    user = db.get(User, user_id)
     if user is None:
         raise credentials_exception
 

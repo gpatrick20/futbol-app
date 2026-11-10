@@ -61,7 +61,10 @@ def test_duplicate_availability_vote(
     )
 
     assert first.status_code == 201
-    assert second.status_code in [400, 409]
+    assert second.status_code == 409
+    assert second.json()["detail"] == (
+        "Ya registraste disponibilidad para esta fecha y hora"
+    )
 
 
 def test_list_availability_votes(

@@ -1,0 +1,13 @@
+# Credenciales y configuración local
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Dependencias de frontend
+node_modules/

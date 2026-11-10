@@ -1,13 +1,33 @@
 from fastapi.testclient import TestClient
+from uuid import UUID
+
+from app.models.match import Match
 
 
-def mark_match_played(client: TestClient, auth_headers: dict[str, str], match_id: str) -> None:
+def mark_match_played(
+    client: TestClient,
+    auth_headers: dict[str, str],
+    match_id: str,
+) -> None:
     response = client.patch(
         f"/matches/{match_id}/date",
         headers=auth_headers,
-        json={"match_date": "2026-11-15", "start_time": "19:30:00"},
+        json={
+            "match_date": "2026-11-15",
+            "start_time": "19:30:00",
+        },
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
+
+    # Usar la sesión de pruebas, nunca la conexión real a Supabase.
+    from conftest import TestingSessionLocal
+
+    with TestingSessionLocal() as db:
+        match = db.get(Match, UUID(match_id))
+        assert match is not None
+
+        match.status = "played"
+        db.commit()
 
 
 def test_create_result(
