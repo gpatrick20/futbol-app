@@ -1,7 +1,5 @@
 from fastapi.testclient import TestClient
-from uuid import UUID
 
-from app.models.match import Match
 
 def mark_match_played(
     client: TestClient,
@@ -18,15 +16,12 @@ def mark_match_played(
     )
     assert response.status_code == 200, response.text
 
-    # Usar la sesión de pruebas, nunca la conexión real a Supabase.
-    from conftest import TestingSessionLocal
-
-    with TestingSessionLocal() as db:
-        match = db.get(Match, UUID(match_id))
-        assert match is not None
-
-        match.status = "played"
-        db.commit()
+    finish_response = client.patch(
+        f"/matches/{match_id}/finish",
+        headers=auth_headers,
+    )
+    assert finish_response.status_code == 200, finish_response.text
+    assert finish_response.json()["status"] == "played"
 
 
 def test_create_match_event(

@@ -55,15 +55,29 @@ def set_match_date(
     db: Session = Depends(get_db),
 ):
     match = db.get(Match, match_id)
+
     if match is None:
-        raise HTTPException(status_code=404, detail="Partido no encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail="Partido no encontrado",
+        )
 
     if match.created_by != current_user.id:
-        raise HTTPException(status_code=403, detail="Solo el creador puede confirmar la fecha")
+        raise HTTPException(
+            status_code=403,
+            detail="Solo el creador puede confirmar la fecha",
+        )
+
+    if match.status in ("cancelled", "played"):
+        raise HTTPException(
+            status_code=409,
+            detail="No se puede cambiar la fecha de un partido cancelado o jugado",
+        )
 
     match.match_date = date_data.match_date
     match.start_time = date_data.start_time
     match.status = "confirmed"
+
     db.commit()
     db.refresh(match)
     return match
@@ -76,17 +90,30 @@ def cancel_match(
     db: Session = Depends(get_db),
 ):
     match = db.get(Match, match_id)
+
     if match is None:
-        raise HTTPException(status_code=404, detail="Partido no encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail="Partido no encontrado",
+        )
 
     if match.created_by != current_user.id:
-        raise HTTPException(status_code=403, detail="Solo el creador puede cancelar el partido")
+        raise HTTPException(
+            status_code=403,
+            detail="Solo el creador puede cancelar el partido",
+        )
+
+    if match.status == "played":
+        raise HTTPException(
+            status_code=409,
+            detail="No se puede cancelar un partido jugado",
+        )
 
     match.status = "cancelled"
+
     db.commit()
     db.refresh(match)
     return match
-
 
 @router.post(
     "/{match_id}/participants",
@@ -160,3 +187,38 @@ def update_participant_status(
     db.commit()
     db.refresh(participant)
     return participant
+
+@router.patch("/{match_id}/finish", response_model=MatchOut)
+def finish_match(
+    match_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    match = db.get(Match, match_id)
+
+    if match is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Partido no encontrado",
+        )
+
+    if match.created_by != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Solo el creador puede finalizar el partido",
+        )
+
+    # Repetir la solicitud no modifica un partido ya finalizado.
+    if match.status == "played":
+        return match
+
+    if match.status not in ("confirmed", "full"):
+        raise HTTPException(
+            status_code=409,
+            detail="Solo se pueden finalizar partidos confirmados o completos",
+        )
+
+    match.status = "played"
+    db.commit()
+    db.refresh(match)
+    return match
