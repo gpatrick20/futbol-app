@@ -14,7 +14,7 @@ class MatchCreate(BaseModel):
     start_time: time | None = None
     total_cost: Decimal | None = Field(default=None, ge=0)
     min_players: int = Field(default=0, ge=0)
-    max_players: int = Field(default=0, ge=0)
+    max_players: int = Field(default=10, ge=1)
 
     @model_validator(mode="after")
     def validate_capacity(self):
@@ -57,4 +57,5 @@ class MatchParticipantOut(BaseModel):
     match_id: UUID
     user_id: UUID
     status: str
+    team: str
     joined_at: datetime

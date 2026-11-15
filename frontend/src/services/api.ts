@@ -88,6 +88,20 @@ export type MatchCreateData = {
   max_players: number;
 };
 
+export type MatchParticipant = {
+  id: string;
+  match_id: string;
+  user_id: string;
+  status:
+    | "invited"
+    | "confirmed"
+    | "tentative"
+    | "absent"
+    | "substitute";
+  team: "A" | "B";
+  joined_at: string;
+};
+
 interface TokenResponse {
   access_token: string;
   token_type: string;
@@ -189,6 +203,23 @@ export async function getParticipatingMatches(): Promise<Match[]> {
   return protectedRequest<Match[]>("/matches/participating", {
     method: "GET",
   });
+}
+
+export async function getAvailableMatches(): Promise<Match[]> {
+  return protectedRequest<Match[]>("/matches/available", {
+    method: "GET",
+  });
+}
+
+export async function joinMatch(
+  matchId: string,
+): Promise<MatchParticipant> {
+  return protectedRequest<MatchParticipant>(
+    `/matches/${matchId}/participants`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export async function createMatch(

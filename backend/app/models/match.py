@@ -92,6 +92,10 @@ class MatchParticipant(Base):
             "status IN ('invited', 'confirmed', 'tentative', 'absent', 'substitute')",
             name="ck_match_participants_status",
         ),
+        CheckConstraint(
+            "team IN ('A', 'B')",
+            name="ck_match_participants_team",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -105,6 +109,9 @@ class MatchParticipant(Base):
     )
     status: Mapped[str] = mapped_column(
         String(20), default="invited", nullable=False
+    )
+    team: Mapped[str] = mapped_column(
+        String(1), default="A", nullable=False
     )
     joined_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
