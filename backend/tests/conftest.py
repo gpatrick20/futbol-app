@@ -76,6 +76,7 @@ def register_and_login(client: TestClient, email: str = "player@example.com") ->
     login_response = client.post(
         "/auth/login",
         data={"username": email, "password": "SecurePass123"},
+        headers={"Origin": "http://localhost:5173"},
     )
     assert login_response.status_code == 200, login_response.text
 
