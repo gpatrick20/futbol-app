@@ -12,10 +12,14 @@ import AuthForm from "./components/auth/AuthForm";
 import Alert from "./components/ui/Alert";
 import Button from "./components/ui/Button";
 import Card from "./components/ui/Card";
+import MatchesPage from "./components/matches/MatchesPage";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authNotice, setAuthNotice] = useState("");
+  const [view, setView] = useState<"home" | "matches">(
+    "home",
+  );
 
   const [checkingSession, setCheckingSession] = useState(true);
   const [sessionError, setSessionError] = useState("");
@@ -141,29 +145,40 @@ export default function App() {
             </Button>
           </div>
         ) : user ? (
-          <section>
-            <h2>Bienvenido, {user.full_name}</h2>
+          view === "matches" ? (
+            <MatchesPage onBack={() => setView("home")} />
+          ) : (
+            <section>
+              <h2>Bienvenido, {user.full_name}</h2>
 
-            <p>Email: {user.email}</p>
-            <p>Rol: {user.role}</p>
-            <p>Comuna: {user.commune ?? "Sin indicar"}</p>
-            <p>Posición: {user.position ?? "Sin indicar"}</p>
+              <p>Email: {user.email}</p>
+              <p>Rol: {user.role}</p>
+              <p>Comuna: {user.commune ?? "Sin indicar"}</p>
+              <p>Posición: {user.position ?? "Sin indicar"}</p>
 
-            <div style={{ display: "grid", gap: 16 }}>
-              {logoutError && (
-                <Alert variant="error">{logoutError}</Alert>
-              )}
+              <div style={{ display: "grid", gap: 16 }}>
+                {logoutError && (
+                  <Alert variant="error">{logoutError}</Alert>
+                )}
 
-              <Button
-                variant="secondary"
-                onClick={handleLogout}
-                loading={loggingOut}
-                loadingText="Cerrando sesión..."
-              >
-                Cerrar sesión
-              </Button>
-            </div>
-          </section>
+                <Button
+                  onClick={() => setView("matches")}
+                  fullWidth
+                >
+                  Ver mis partidos
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  onClick={handleLogout}
+                  loading={loggingOut}
+                  loadingText="Cerrando sesión..."
+                >
+                  Cerrar sesión
+                </Button>
+              </div>
+            </section>
+          )
         ) : (
           <>
             {authNotice && (

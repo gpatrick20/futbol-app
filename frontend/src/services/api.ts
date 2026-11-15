@@ -13,13 +13,30 @@ export class ApiError extends Error {
 
 export const SESSION_EXPIRED_EVENT = "futbol:session-expired";
 
+type ProtectedRequestOptions = Omit<RequestInit, "body"> & {
+  body?: unknown;
+};
+
 async function protectedRequest<T>(
   path: string,
-  options: RequestInit = {},
+  options: ProtectedRequestOptions = {},
 ): Promise<T> {
+  const { body, ...restOptions } = options;
+
+  const headers = new Headers(restOptions.headers);
+
+  if (body !== undefined && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(`${API_URL}${path}`, {
-    ...options,
+    ...restOptions,
+    headers,
     credentials: "include",
+    body:
+      body === undefined
+        ? undefined
+        : JSON.stringify(body),
   });
 
   if (response.status === 401) {
@@ -37,6 +54,39 @@ export interface User {
   commune: string | null;
   position: string | null;
 }
+export type Match = {
+  id: string;
+  created_by: string;
+  format: "futbol5" | "futbol7" | "futbol11";
+  venue_name: string;
+  address: string | null;
+  commune: string | null;
+  match_date: string | null;
+  start_time: string | null;
+  status:
+    | "proposed"
+    | "voting"
+    | "confirmed"
+    | "full"
+    | "cancelled"
+    | "played";
+  total_cost: string | null;
+  min_players: number;
+  max_players: number;
+  created_at: string;
+};
+
+export type MatchCreateData = {
+  format: "futbol5" | "futbol7" | "futbol11";
+  venue_name: string;
+  address?: string | null;
+  commune?: string | null;
+  match_date?: string | null;
+  start_time?: string | null;
+  total_cost?: string | number | null;
+  min_players: number;
+  max_players: number;
+};
 
 interface TokenResponse {
   access_token: string;
@@ -120,4 +170,32 @@ export async function logout(): Promise<void> {
   });
 
   await readResponse<{ message: string }>(response);
+}
+
+export async function getMatches(): Promise<Match[]> {
+  return protectedRequest<Match[]>("/matches", {
+    method: "GET",
+  });
+}
+
+export async function getOrganizedMatches(): Promise<Match[]> {
+  return protectedRequest<Match[]>("/matches/organized", {
+    method: "GET",
+  });
+}
+
+
+export async function getParticipatingMatches(): Promise<Match[]> {
+  return protectedRequest<Match[]>("/matches/participating", {
+    method: "GET",
+  });
+}
+
+export async function createMatch(
+  matchData: MatchCreateData,
+): Promise<Match> {
+  return protectedRequest<Match>("/matches", {
+    method: "POST",
+    body: matchData,
+  });
 }
