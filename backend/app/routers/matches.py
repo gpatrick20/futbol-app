@@ -60,7 +60,19 @@ def create_match(
         **match_data.model_dump(),
     )
     db.add(match)
+    db.flush()
+
+    organizer_participant = MatchParticipant(
+        match_id=match.id,
+        user_id=current_user.id,
+        status="confirmed",
+        team="A",
+    )
+    db.add(organizer_participant)
+
+    _sync_match_capacity_status(match, confirmed_count=1)
     db.commit()
+    db.refresh(organizer_participant)
     db.refresh(match)
     return match
 
@@ -190,6 +202,8 @@ def set_match_date(
     match.match_date = date_data.match_date
     match.start_time = date_data.start_time
     match.status = "confirmed"
+    confirmed_count = _count_confirmed_participants(db, match_id)
+    _sync_match_capacity_status(match, confirmed_count)
 
 
     db.commit()
@@ -259,12 +273,6 @@ def join_match(
                 detail="Partido no encontrado",
             )
 
-        if match.created_by == current_user.id:
-            raise HTTPException(
-                status_code=409,
-                detail="No puedes unirte a un partido organizado por ti",
-            )
-
         if match.status in ("cancelled", "played"):
             raise HTTPException(
                 status_code=409,
@@ -308,6 +316,7 @@ def join_match(
             match_id=match_id,
             user_id=current_user.id,
             status="confirmed",
+            team="A",
         )
         db.add(participant)
 
@@ -339,7 +348,12 @@ def update_participant_status(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    match = db.get(Match, match_id)
+    match = (
+        db.query(Match)
+        .filter(Match.id == match_id)
+        .with_for_update()
+        .first()
+    )
     if match is None:
         raise HTTPException(status_code=404, detail="Partido no encontrado")
 
@@ -360,32 +374,17 @@ def update_participant_status(
         raise HTTPException(status_code=404, detail="Participante no encontrado")
 
 
-    previous_status = participant.status
     participant.status = participant_data.status
-    if (
-        participant.status == "confirmed"
-        and match.max_players > 0
-    ):
-        confirmed_count = _count_confirmed_participants(db, match_id)
-        if (
-            previous_status != "confirmed"
-            and confirmed_count >= match.max_players
-        ):
-            raise HTTPException(
-                status_code=409,
-                detail="No hay cupos disponibles en este partido",
-            )
+    db.flush()
     confirmed_count_after = _count_confirmed_participants(db, match_id)
     if (
-        previous_status != "confirmed"
-        and participant.status == "confirmed"
+        match.max_players > 0
+        and confirmed_count_after > match.max_players
     ):
-        confirmed_count_after += 1
-    elif (
-        previous_status == "confirmed"
-        and participant.status != "confirmed"
-    ):
-        confirmed_count_after = max(0, confirmed_count_after - 1)
+        raise HTTPException(
+            status_code=409,
+            detail="No hay cupos disponibles en este partido",
+        )
 
     _sync_match_capacity_status(match, confirmed_count_after)
     db.commit()

@@ -98,6 +98,7 @@ export type MatchParticipant = {
     | "tentative"
     | "absent"
     | "substitute";
+  team: "A" | "B";
   joined_at: string;
 };
 
