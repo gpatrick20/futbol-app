@@ -4,6 +4,10 @@ import type { FormEvent } from "react";
 import { getCurrentUser, login, register } from "./services/api";
 import type { User } from "./services/api";
 
+import Button from "./components/ui/Button";
+import Card from "./components/ui/Card";
+import Input from "./components/ui/Input";
+
 export default function App() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -39,7 +43,6 @@ export default function App() {
           throw new Error("Ingresa tu nombre.");
         }
 
-        // Límite explícito mientras el backend utiliza bcrypt.
         if (new TextEncoder().encode(password).length > 72) {
           throw new Error("La contraseña no puede superar los 72 bytes.");
         }
@@ -89,37 +92,38 @@ export default function App() {
         maxWidth: 440,
         margin: "48px auto",
         padding: 24,
-        fontFamily: "system-ui, sans-serif",
       }}
     >
-      <h1>futbol-app</h1>
-      <p>Organiza partidos de fútbol con tu grupo.</p>
+      <Card>
+        <h1>futbol-app</h1>
+        <p>Organiza partidos de fútbol con tu grupo.</p>
 
-      {user ? (
-        <section>
-          <h2>Bienvenido, {user.full_name}</h2>
-          <p>Email: {user.email}</p>
-          <p>Rol: {user.role}</p>
-          <p>Comuna: {user.commune ?? "Sin indicar"}</p>
-          <p>Posición: {user.position ?? "Sin indicar"}</p>
+        {user ? (
+          <section>
+            <h2>Bienvenido, {user.full_name}</h2>
+            <p>Email: {user.email}</p>
+            <p>Rol: {user.role}</p>
+            <p>Comuna: {user.commune ?? "Sin indicar"}</p>
+            <p>Posición: {user.position ?? "Sin indicar"}</p>
 
-          <button type="button" onClick={handleLogout}>
-            Cerrar sesión
-          </button>
-        </section>
-      ) : (
-        <>
-          <h2>{mode === "login" ? "Iniciar sesión" : "Crear cuenta"}</h2>
+            <Button variant="secondary" onClick={handleLogout}>
+              Cerrar sesión
+            </Button>
+          </section>
+        ) : (
+          <>
+            <h2>
+              {mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
+            </h2>
 
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: "grid", gap: 12 }}
-          >
-            {mode === "register" && (
-              <>
-                <label htmlFor="full-name">Nombre completo</label>
-                <input
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: "grid", gap: 16 }}
+            >
+              {mode === "register" && (
+                <Input
                   id="full-name"
+                  label="Nombre completo"
                   autoComplete="name"
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
@@ -127,103 +131,115 @@ export default function App() {
                   disabled={loading}
                   required
                 />
-              </>
-            )}
+              )}
 
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              maxLength={255}
+              <Input
+                id="email"
+                label="Email"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                maxLength={255}
+                disabled={loading}
+                required
+              />
+
+              <Input
+                id="password"
+                label="Contraseña"
+                type="password"
+                autoComplete={
+                  mode === "register" ? "new-password" : "current-password"
+                }
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                minLength={mode === "register" ? 8 : undefined}
+                hint={
+                  mode === "register"
+                    ? "Usa al menos 8 caracteres."
+                    : undefined
+                }
+                disabled={loading}
+                required
+              />
+
+              {mode === "register" && (
+                <>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <label htmlFor="role">Rol</label>
+
+                    <select
+                      id="role"
+                      value={role}
+                      onChange={(event) =>
+                        setRole(event.target.value as "leader" | "player")
+                      }
+                      disabled={loading}
+                    >
+                      <option value="player">Jugador</option>
+                      <option value="leader">Organizador</option>
+                    </select>
+                  </div>
+
+                  <Input
+                    id="commune"
+                    label="Comuna (opcional)"
+                    value={commune}
+                    onChange={(event) => setCommune(event.target.value)}
+                    maxLength={100}
+                    disabled={loading}
+                  />
+
+                  <Input
+                    id="position"
+                    label="Posición (opcional)"
+                    value={position}
+                    onChange={(event) => setPosition(event.target.value)}
+                    maxLength={50}
+                    disabled={loading}
+                  />
+                </>
+              )}
+
+              {error && (
+                <p role="alert" style={{ color: "var(--color-danger)" }}>
+                  {error}
+                </p>
+              )}
+
+              {message && (
+                <p role="status" style={{ color: "var(--color-success)" }}>
+                  {message}
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                fullWidth
+                loading={loading}
+                loadingText={
+                  mode === "login" ? "Ingresando..." : "Creando cuenta..."
+                }
+              >
+                {mode === "login" ? "Ingresar" : "Crear cuenta"}
+              </Button>
+            </form>
+
+            <Button
+              variant="secondary"
+              onClick={switchMode}
               disabled={loading}
-              required
-            />
-
-            <label htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              type="password"
-              autoComplete={
-                mode === "register" ? "new-password" : "current-password"
-              }
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              minLength={mode === "register" ? 8 : undefined}
-              disabled={loading}
-              required
-            />
-
-            {mode === "register" && (
-              <>
-                <label htmlFor="role">Rol</label>
-                <select
-                  id="role"
-                  value={role}
-                  onChange={(event) =>
-                    setRole(event.target.value as "leader" | "player")
-                  }
-                  disabled={loading}
-                >
-                  <option value="player">Jugador</option>
-                  <option value="leader">Organizador</option>
-                </select>
-
-                <label htmlFor="commune">Comuna (opcional)</label>
-                <input
-                  id="commune"
-                  value={commune}
-                  onChange={(event) => setCommune(event.target.value)}
-                  maxLength={100}
-                  disabled={loading}
-                />
-
-                <label htmlFor="position">Posición (opcional)</label>
-                <input
-                  id="position"
-                  value={position}
-                  onChange={(event) => setPosition(event.target.value)}
-                  maxLength={50}
-                  disabled={loading}
-                />
-              </>
-            )}
-
-            {error && (
-              <p role="alert" style={{ color: "#b91c1c" }}>
-                {error}
-              </p>
-            )}
-
-            {message && (
-              <p role="status" style={{ color: "#166534" }}>
-                {message}
-              </p>
-            )}
-
-            <button type="submit" disabled={loading}>
-              {loading
-                ? "Procesando..."
-                : mode === "login"
-                  ? "Ingresar"
-                  : "Crear cuenta"}
-            </button>
-          </form>
-
-          <button
-            type="button"
-            onClick={switchMode}
-            disabled={loading}
-            style={{ marginTop: 16 }}
-          >
-            {mode === "login"
-              ? "No tengo cuenta: registrarme"
-              : "Ya tengo cuenta: iniciar sesión"}
-          </button>
-        </>
-      )}
+              fullWidth
+              style={{ marginTop: 16 }}
+            >
+              {mode === "login"
+                ? "No tengo cuenta: registrarme"
+                : "Ya tengo cuenta: iniciar sesión"}
+            </Button>
+          </>
+        )}
+      </Card>
     </main>
   );
 }
