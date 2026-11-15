@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
+    
+    auth_cookie_secure: bool = False
+
     class Config:
         env_file = ".env"
 

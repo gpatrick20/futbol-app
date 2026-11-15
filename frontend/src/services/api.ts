@@ -1,4 +1,15 @@
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "http://localhost:8000";
+
+
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
 
 export interface User {
   id: string;
@@ -27,10 +38,10 @@ async function readResponse<T>(response: Response): Promise<T> {
         message = "Revisa los datos ingresados.";
       }
     } catch {
-      // Mantener el mensaje HTTP cuando no hay un cuerpo JSON.
+      // Conservamos el mensaje HTTP si no hay una respuesta JSON.
     }
 
-    throw new Error(message);
+    throw new ApiError(message, response.status);
   }
 
   return response.json() as Promise<T>;
@@ -46,21 +57,21 @@ export async function login(
   });
 
   const response = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
+  method: "POST",
+  credentials: "include",
+  headers: {
+    "Content-Type": "application/x-www-form-urlencoded",
+  },
+  body,
   });
 
   return readResponse<TokenResponse>(response);
 }
 
-export async function getCurrentUser(token: string): Promise<User> {
+export async function getCurrentUser(): Promise<User> {
   const response = await fetch(`${API_URL}/auth/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
+    cache: "no-store",
   });
 
   return readResponse<User>(response);
@@ -85,4 +96,13 @@ export async function register(data: RegisterData): Promise<User> {
   });
 
   return readResponse<User>(response);
+}
+
+export async function logout(): Promise<void> {
+  const response = await fetch(`${API_URL}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  await readResponse<{ message: string }>(response);
 }

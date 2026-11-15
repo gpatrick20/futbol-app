@@ -4,6 +4,8 @@ import { getCurrentUser, login, register } from "../../services/api";
 import type { User } from "../../services/api";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
+import Select from "../ui/Select";
+import Alert from "../ui/Alert";
 
 interface AuthFormProps {
   onAuthenticated: (user: User) => void;
@@ -50,8 +52,8 @@ export default function AuthForm({ onAuthenticated }: AuthFormProps) {
         setMessage("Cuenta creada correctamente. Ya puedes iniciar sesión.");
         return;
       }
-      const token = await login(email.trim(), password);
-      const currentUser = await getCurrentUser(token.access_token);
+      await login(email.trim(), password);
+      const currentUser = await getCurrentUser();
       setPassword("");
       onAuthenticated(currentUser);
     } catch (err) {
@@ -81,14 +83,19 @@ export default function AuthForm({ onAuthenticated }: AuthFormProps) {
           disabled={loading} required />
         {mode === "register" && (
           <>
-            <div style={{ display: "grid", gap: 6 }}>
-              <label htmlFor="role">Rol</label>
-              <select id="role" value={role} disabled={loading}
-                onChange={(event) => setRole(event.target.value as "leader" | "player")}>
-                <option value="player">Jugador</option>
-                <option value="leader">Organizador</option>
-              </select>
-            </div>
+            <Select
+              id="role"
+              label="Rol"
+              value={role}
+              onChange={(event) =>
+                setRole(event.target.value as "leader" | "player")
+              }
+              options={[
+                { value: "player", label: "Jugador" },
+                { value: "leader", label: "Organizador" },
+              ]}
+              disabled={loading}
+            />
             <Input id="commune" label="Comuna (opcional)" value={commune}
               onChange={(event) => setCommune(event.target.value)}
               maxLength={100} disabled={loading} />
@@ -97,8 +104,8 @@ export default function AuthForm({ onAuthenticated }: AuthFormProps) {
               maxLength={50} disabled={loading} />
           </>
         )}
-        {error && <p role="alert" style={{ color: "var(--color-danger)" }}>{error}</p>}
-        {message && <p role="status" style={{ color: "var(--color-success)" }}>{message}</p>}
+        {error && <Alert variant="error">{error}</Alert>}
+        {message && <Alert variant="success">{message}</Alert>}
         <Button type="submit" fullWidth loading={loading}
           loadingText={mode === "login" ? "Ingresando..." : "Creando cuenta..."}>
           {mode === "login" ? "Ingresar" : "Crear cuenta"}

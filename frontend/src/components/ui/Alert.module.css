@@ -1,0 +1,19 @@
+.alert {
+  margin: 0;
+  padding: 12px 14px;
+
+  border: 1px solid currentColor;
+  border-radius: var(--radius-control);
+
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+.success {
+  color: var(--color-success);
+}
