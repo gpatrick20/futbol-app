@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 
-import { ApiError, getCurrentUser, logout } from "./services/api";
+import {
+  ApiError,
+  getCurrentUser,
+  logout,
+  SESSION_EXPIRED_EVENT,
+} from "./services/api";
 import type { User } from "./services/api";
 
 import AuthForm from "./components/auth/AuthForm";
@@ -10,6 +15,7 @@ import Card from "./components/ui/Card";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [authNotice, setAuthNotice] = useState("");
 
   const [checkingSession, setCheckingSession] = useState(true);
   const [sessionError, setSessionError] = useState("");
@@ -57,10 +63,42 @@ export default function App() {
     };
   }, [sessionAttempt]);
 
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    function handleSessionExpired() {
+      setUser(null);
+      setAuthNotice(
+        "Tu sesión ya no es válida. Inicia sesión nuevamente.",
+      );
+      setLogoutError("");
+    }
+
+    window.addEventListener(
+      SESSION_EXPIRED_EVENT,
+      handleSessionExpired,
+    );
+
+    return () => {
+      window.removeEventListener(
+        SESSION_EXPIRED_EVENT,
+        handleSessionExpired,
+      );
+    };
+  }, [user]);
+
   function retrySession() {
     setCheckingSession(true);
     setSessionError("");
     setSessionAttempt((current) => current + 1);
+  }
+
+  function handleAuthenticated(currentUser: User) {
+    setAuthNotice("");
+    setLogoutError("");
+    setUser(currentUser);
   }
 
   async function handleLogout() {
@@ -69,6 +107,7 @@ export default function App() {
 
     try {
       await logout();
+      setAuthNotice("");
       setUser(null);
     } catch {
       setLogoutError(
@@ -126,7 +165,15 @@ export default function App() {
             </div>
           </section>
         ) : (
-          <AuthForm onAuthenticated={setUser} />
+          <>
+            {authNotice && (
+              <div style={{ marginBottom: 16 }}>
+                <Alert variant="error">{authNotice}</Alert>
+              </div>
+            )}
+
+            <AuthForm onAuthenticated={handleAuthenticated} />
+          </>
         )}
       </Card>
     </main>

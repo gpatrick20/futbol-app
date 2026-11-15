@@ -11,6 +11,24 @@ export class ApiError extends Error {
   }
 }
 
+export const SESSION_EXPIRED_EVENT = "futbol:session-expired";
+
+async function protectedRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    credentials: "include",
+  });
+
+  if (response.status === 401) {
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+  }
+
+  return readResponse<T>(response);
+}
+
 export interface User {
   id: string;
   email: string;
@@ -69,12 +87,9 @@ export async function login(
 }
 
 export async function getCurrentUser(): Promise<User> {
-  const response = await fetch(`${API_URL}/auth/me`, {
-    credentials: "include",
+  return protectedRequest<User>("/auth/me", {
     cache: "no-store",
   });
-
-  return readResponse<User>(response);
 }
 
 export interface RegisterData {
